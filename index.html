@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VISTA Access - Page One</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: #f4f4f4;
+    }
+    .popup {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: white;
+      padding: 20px;
+      border: 2px solid #333;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+      z-index: 1000;
+    }
+    .popup.show {
+      display: block;
+    }
+    .popup button {
+      margin: 10px;
+      padding: 10px 20px;
+      cursor: pointer;
+    }
+    .wallet-status {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .wallet-status span {
+      font-weight: bold;
+    }
+    .welcome-message {
+      margin-top: 20px;
+      font-size: 1.2em;
+      color: #333;
+    }
+    button {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+  </style>
+</head>
+<body>
+  <h1>VISTA Access Portal</h1>
+  <div class="wallet-status">
+    <span id="walletStatus">Not Connected</span>
+    <button onclick="showPopup()">Connect Wallet</button>
+  </div>
+  <div id="welcomeMessage" class="welcome-message" style="display: none;"></div>
+  <div id="walletPopup" class="popup">
+    <h2>Connect Phantom Wallet</h2>
+    <p>Please connect your Phantom Wallet to proceed.</p>
+    <button onclick="connectWallet()">Connect</button>
+    <button onclick="closePopup()">Cancel</button>
+  </div>
+
+  <script src="https://unpkg.com/@solana/web3.js@1.95.3/dist/index.min.js"></script>
+  <script>
+    // Show popup on page load
+    window.onload = () => {
+      document.getElementById('walletPopup').classList.add('show');
+    };
+
+    // Show popup when clicking "Connect Wallet" button
+    function showPopup() {
+      document.getElementById('walletPopup').classList.add('show');
+    }
+
+    // Close popup without action
+    function closePopup() {
+      document.getElementById('walletPopup').classList.remove('show');
+    }
+
+    // Connect to Phantom Wallet
+    async function connectWallet() {
+      try {
+        const { solana } = window;
+        if (!solana || !solana.isPhantom) {
+          alert('Please install Phantom Wallet extension.');
+          return;
+        }
+        // Connect to wallet
+        await solana.connect();
+        const publicKey = solana.publicKey.toString();
+        const shortAddress = publicKey.slice(0, 4) + '...' + publicKey.slice(-4);
+        // Update wallet status
+        document.getElementById('walletStatus').textContent = `Connected: ${shortAddress}`;
+        // Show welcome message (using short address as name placeholder)
+        const userName = 'Andy'; // Replace with dynamic name if available
+        document.getElementById('welcomeMessage').textContent = 
+          `Welcome ${userName}! It's good to have you with us! Do you have $VISTA coins or do you need to purchase?`;
+        document.getElementById('welcomeMessage').style.display = 'block';
+        // Close popup
+        closePopup();
+        // Store connection status (public key only, no sensitive data)
+        localStorage.setItem('walletConnected', publicKey);
+      } catch (error) {
+        console.error('Wallet connection failed:', error);
+        alert('Failed to connect wallet. Please try again.');
+      }
+    }
+  </script>
+</body>
+</html>
