@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>VISTA Access - Page One</title>
+  <title>VISTA Access Portal</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -43,40 +43,27 @@
       font-size: 1.2em;
       color: #333;
     }
+    .payment-section {
+      margin-top: 20px;
+      text-align: center;
+    }
     button {
       background-color: #007bff;
       color: white;
       border: none;
-      padding: 8px 16px;
+      padding: 10px 20px;
       border-radius: 4px;
       cursor: pointer;
+      font-size: 1.1em;
+      font-weight: bold;
     }
-    button:hover {
+    button:hover:not(:disabled) {
       background-color: #0056b3;
     }
-      .payment-section {
-    margin-top: 20px;
-    text-align: center;
-  }
-  #payEcosystemFee {
-    background-color: #007bff;
-    color: white;
-    border: none;
-    padding: 10px 20px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 1.1em;
-    font-weight: bold;
-  }
-  #payEcosystemFee:hover {
-    background-color: #0056b3;
-  }
-  #payEcosystemFee:disabled {
-    background-color: #6c757d;
-    cursor: not-allowed;
-  }
-
-      
+    button:disabled {
+      background-color: #6c757d;
+      cursor: not-allowed;
+    }
   </style>
 </head>
 <body>
@@ -86,6 +73,9 @@
     <button onclick="showPopup()">Connect Wallet</button>
   </div>
   <div id="welcomeMessage" class="welcome-message" style="display: none;"></div>
+  <div class="payment-section">
+    <button id="payEcosystemFee" onclick="payEcosystemFee()">Pay Ecosystem Fee ($5 USD)</button>
+  </div>
   <div id="walletPopup" class="popup">
     <h2>Connect Phantom Wallet</h2>
     <p>Please connect your Phantom Wallet to proceed.</p>
@@ -93,170 +83,30 @@
     <button onclick="closePopup()">Cancel</button>
   </div>
 
-  
-<!-- Pay Ecosystem Fee Button -->
-<div class="payment-section">
-  <button id="payEcosystemFee" onclick="payEcosystemFee()">Pay Ecosystem Fee ($5 USD)</button>
-</div>
-
-
-<script src="https://unpkg.com/@solana/spl-token@0.4.8/dist/index.min.js"></script>
-<script>
-  // Configuration
-  const VISTA_TOKEN_MINT_ADDRESS = 'https://pump.fun/coin/4c6C2AiAc91BZuHUKme6Rj9ZFfVV61f9ALWe1i29pump'; // Replace with actual $VISTA mint address
-  const RECIPIENT_WALLET_ADDRESS = '8JU8fEZh4ssSHphcWnygcdoX6RzMTAV3TFMAcK28UFMp'; // Replace with your wallet address
-  const PAYMENT_AMOUNT = 1000000 * 10 ** 6; // 1,000,000 $VISTA (assuming 6 decimals)
-  const SOLANA_NETWORK = 'mainnet-beta'; // Change to 'devnet' if testing
-
-  // Check payment status on load
-  window.addEventListener('load', () => {
-    const publicKey = window.solana?.publicKey?.toString();
-    if (publicKey && localStorage.getItem(`ecosystemPaid_${publicKey}`)) {
-      document.getElementById('payEcosystemFee').textContent = 'Fee Paid';
-      document.getElementById('payEcosystemFee').disabled = true;
-    }
-  });
-
-  // Pay ecosystem fee
-  async function payEcosystemFee() {
-    try {
-      const { solana } = window;
-      if (!solana || !solana.isPhantom) {
-        alert('Please connect your Phantom Wallet first.');
-        return;
-      }
-      const publicKey = solana.publicKey?.toString();
-      if (!publicKey) {
-        alert('Wallet not connected. Please connect your wallet.');
-        return;
-      }
-
-      // Check if payment was already made
-      if (localStorage.getItem(`ecosystemPaid_${publicKey}`)) {
-        alert('You have already paid the ecosystem fee.');
-        window.location.href = 'palmventures.html';
-        return;
-      }
-
-      // Initialize Solana connection
-      const connection = new solanaWeb3.Connection(solanaWeb3.clusterApiUrl(SOLANA_NETWORK), 'confirmed');
-      
-      // Get or create associated token account for sender
-      const senderTokenAccount = await splToken.getOrCreateAssociatedTokenAccount(
-        connection,
-        solana, // Payer (Phantom wallet)
-        new solanaWeb3.PublicKey(VISTA_TOKEN_MINT_ADDRESS),
-        new solanaWeb3.PublicKey(publicKey)
-      );
-
-      // Get or create associated token account for recipient
-      const recipientTokenAccount = await splToken.getOrCreateAssociatedTokenAccount(
-        connection,
-        solana,
-        new solanaWeb3.PublicKey(VISTA_TOKEN_MINT_ADDRESS),
-        new solanaWeb3.PublicKey(RECIPIENT_WALLET_ADDRESS)
-      );
-
-      // Create transaction
-      const transaction = new solanaWeb3.Transaction().add(
-        splToken.createTransferInstruction(
-          senderTokenAccount.address,
-          recipientTokenAccount.address,
-          new solanaWeb3.PublicKey(publicKey),
-          PAYMENT_AMOUNT,
-          [],
-          splToken.TOKEN_PROGRAM_ID
-        )
-      );
-
-      // Get recent blockhash
-      transaction.recentBlockhash = (await connection.getLatestBlockhash()).blockhash;
-      transaction.feePayer = new solanaWeb3.PublicKey(publicKey);
-
-      // Sign and send transaction
-      const signedTransaction = await solana.signTransaction(transaction);
-      const signature = await connection.sendRawTransaction(signedTransaction.serialize());
-
-      // Confirm transaction
-      await connection.confirmTransaction(signature, 'confirmed');
-      console.log('Payment successful, signature:', signature);
-
-      // Store payment status
-      localStorage.setItem(`ecosystemPaid_${publicKey}`, 'true');
-      
-      // Update button
-      document.getElementById('payEcosystemFee').textContent = 'Fee Paid';
-      document.getElementById('payEcosystemFee').disabled = true;
-
-      // Redirect to ecosystem page
-      alert('Payment successful! Redirecting to ecosystem page...');
-      window.location.href = 'palmventures.html';
-    } catch (error) {
-      console.error('Payment failed:', error);
-      alert('Payment failed. Please try again. Error: ' + error.message);
-    }
-  }
-</script>
-
-
-
   <script src="https://unpkg.com/@solana/web3.js@1.95.3/dist/index.min.js"></script>
+  <script src="https://unpkg.com/@solana/spl-token@0.4.8/dist/index.min.js"></script>
   <script>
+    // Configuration
+    const VISTA_TOKEN_MINT_ADDRESS = 'https://pump.fun/coin/4c6C2AiAc91BZuHUKme6Rj9ZFfVV61f9ALWe1i29pump'; // Replace with actual $VISTA mint address
+    const RECIPIENT_WALLET_ADDRESS = '8JU8fEZh4ssSHphcWnygcdoX6RzMTAV3TFMAcK28UFMp'; // Replace with your wallet address
+    const PAYMENT_AMOUNT = 1000000 * 10 ** 6; // 1,000,000 $VISTA (assuming 6 decimals)
+    const SOLANA_NETWORK = 'mainnet-beta'; // Change to 'devnet' for testing
+
     // Show popup on page load
     window.onload = () => {
       console.log('Page loaded, showing popup');
       document.getElementById('walletPopup').style.display = 'block';
     };
 
+    // Check payment status on load
+    window.addEventListener('load', () => {
+      const publicKey = window.solana?.publicKey?.toString();
+      if (publicKey && localStorage.getItem(`ecosystemPaid_${publicKey}`)) {
+        document.getElementById('payEcosystemFee').textContent = 'Fee Paid';
+        document.getElementById('payEcosystemFee').disabled = true;
+      }
+    });
+
     // Show popup manually
     function showPopup() {
-      console.log('Connect Wallet button clicked, showing popup');
-      document.getElementById('walletPopup').style.display = 'block';
-    }
-
-    // Close popup and update status to "Not Connected"
-    function closePopup() {
-      console.log('Cancel button clicked, closing popup');
-      document.getElementById('walletPopup').style.display = 'none';
-      document.getElementById('walletStatus').textContent = 'Not Connected';
-      document.getElementById('welcomeMessage').style.display = 'none';
-    }
-
-    // Connect to Phantom Wallet
-    async function connectWallet() {
-      console.log('Connect button clicked, attempting to connect to Phantom');
-      try {
-        const { solana } = window;
-        if (!solana || !solana.isPhantom) {
-          console.error('Phantom Wallet extension not detected');
-          alert('Please install Phantom Wallet extension.');
-          closePopup();
-          return;
-        }
-        // Disconnect any existing session to force wallet selection UI
-        console.log('Disconnecting any existing Phantom session');
-        await solana.disconnect();
-        // Trigger Phantom wallet selection/login UI
-        console.log('Requesting new connection');
-        const response = await solana.connect();
-        const publicKey = response.publicKey.toString();
-        console.log('Connected to wallet:', publicKey);
-        const shortAddress = publicKey.slice(0, 4) + '...' + publicKey.slice(-4);
-        // Update wallet status
-        document.getElementById('walletStatus').textContent = `Connected: ${shortAddress}`;
-        // Show welcome message
-        const userName = 'Guest'; // Replace with wallet metadata or backend query if available
-        document.getElementById('welcomeMessage').textContent = 
-          `Welcome ${userName}, do you have any $VISTA coin or do you need to buy!`;
-        document.getElementById('welcomeMessage').style.display = 'block';
-        // Close popup
-        document.getElementById('walletPopup').style.display = 'none';
-      } catch (error) {
-        console.error('Wallet connection failed:', error);
-        alert('Failed to connect wallet. Please try again.');
-        closePopup();
-      }
-    }
-  </script>
-</body>
-</html>
+      console.log('
