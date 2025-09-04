@@ -74,16 +74,19 @@
   <script>
     // Show popup on page load
     window.onload = () => {
+      console.log('Page loaded, showing popup');
       document.getElementById('walletPopup').style.display = 'block';
     };
 
     // Show popup manually
     function showPopup() {
+      console.log('Connect Wallet button clicked, showing popup');
       document.getElementById('walletPopup').style.display = 'block';
     }
 
     // Close popup and update status to "Not Connected"
     function closePopup() {
+      console.log('Cancel button clicked, closing popup');
       document.getElementById('walletPopup').style.display = 'none';
       document.getElementById('walletStatus').textContent = 'Not Connected';
       document.getElementById('welcomeMessage').style.display = 'none';
@@ -91,21 +94,28 @@
 
     // Connect to Phantom Wallet
     async function connectWallet() {
+      console.log('Connect button clicked, attempting to connect to Phantom');
       try {
         const { solana } = window;
         if (!solana || !solana.isPhantom) {
+          console.error('Phantom Wallet extension not detected');
           alert('Please install Phantom Wallet extension.');
           closePopup();
           return;
         }
-        // Trigger Phantom wallet selection UI
+        // Disconnect any existing session to force wallet selection UI
+        console.log('Disconnecting any existing Phantom session');
+        await solana.disconnect();
+        // Trigger Phantom wallet selection/login UI
+        console.log('Requesting new connection');
         const response = await solana.connect();
         const publicKey = response.publicKey.toString();
+        console.log('Connected to wallet:', publicKey);
         const shortAddress = publicKey.slice(0, 4) + '...' + publicKey.slice(-4);
         // Update wallet status
         document.getElementById('walletStatus').textContent = `Connected: ${shortAddress}`;
         // Show welcome message
-        const userName = 'Guest'; // Replace with wallet metadata if available
+        const userName = 'Guest'; // Replace with wallet metadata or backend query if available
         document.getElementById('welcomeMessage').textContent = 
           `Welcome ${userName}, do you have any $VISTA coin or do you need to buy!`;
         document.getElementById('welcomeMessage').style.display = 'block';
