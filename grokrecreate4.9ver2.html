@@ -12,7 +12,6 @@
       background-color: #f4f4f4;
     }
     .popup {
-      display: none;
       position: fixed;
       top: 50%;
       left: 50%;
@@ -22,9 +21,6 @@
       border: 2px solid #333;
       box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
       z-index: 1000;
-    }
-    .popup.show {
-      display: block;
     }
     .popup button {
       margin: 10px;
@@ -76,58 +72,21 @@
 
   <script src="https://unpkg.com/@solana/web3.js@1.95.3/dist/index.min.js"></script>
   <script>
-    // Check if wallet is already connected on page load
-    window.onload = async () => {
-      const storedPublicKey = localStorage.getItem('walletConnected');
-      if (storedPublicKey && await checkWalletConnection()) {
-        updateWalletStatus(storedPublicKey);
-        showWelcomeMessage(storedPublicKey);
-      } else {
-        // Show popup and trigger wallet connection automatically
-        document.getElementById('walletPopup').classList.add('show');
-        connectWallet();
-      }
+    // Show popup on page load
+    window.onload = () => {
+      document.getElementById('walletPopup').style.display = 'block';
     };
 
     // Show popup manually
     function showPopup() {
-      document.getElementById('walletPopup').classList.add('show');
+      document.getElementById('walletPopup').style.display = 'block';
     }
 
-    // Close popup without action
+    // Close popup and update status to "Not Connected"
     function closePopup() {
-      document.getElementById('walletPopup').classList.remove('show');
-    }
-
-    // Check if wallet is still connected
-    async function checkWalletConnection() {
-      try {
-        const { solana } = window;
-        if (!solana || !solana.isPhantom) {
-          return false;
-        }
-        // Check if Phantom is still connected
-        const response = await solana.connect({ onlyIfTrusted: true });
-        return response.publicKey.toString() === localStorage.getItem('walletConnected');
-      } catch (error) {
-        console.error('Connection check failed:', error);
-        return false;
-      }
-    }
-
-    // Update wallet status UI
-    function updateWalletStatus(publicKey) {
-      const shortAddress = publicKey.slice(0, 4) + '...' + publicKey.slice(-4);
-      document.getElementById('walletStatus').textContent = `Connected: ${shortAddress}`;
-    }
-
-    // Show welcome message
-    function showWelcomeMessage(publicKey) {
-      const shortAddress = publicKey.slice(0, 4) + '...' + publicKey.slice(-4);
-      const userName = 'Andy'; // Replace with dynamic name if available
-      document.getElementById('welcomeMessage').textContent = 
-        `Welcome ${userName}! It's good to have you with us! Do you have $VISTA coins or do you need to purchase?`;
-      document.getElementById('welcomeMessage').style.display = 'block';
+      document.getElementById('walletPopup').style.display = 'none';
+      document.getElementById('walletStatus').textContent = 'Not Connected';
+      document.getElementById('welcomeMessage').style.display = 'none';
     }
 
     // Connect to Phantom Wallet
@@ -142,14 +101,20 @@
         // Trigger Phantom wallet selection UI
         const response = await solana.connect();
         const publicKey = response.publicKey.toString();
-        // Update UI and store connection
-        updateWalletStatus(publicKey);
-        showWelcomeMessage(publicKey);
-        localStorage.setItem('walletConnected', publicKey);
-        closePopup();
+        const shortAddress = publicKey.slice(0, 4) + '...' + publicKey.slice(-4);
+        // Update wallet status
+        document.getElementById('walletStatus').textContent = `Connected: ${shortAddress}`;
+        // Show welcome message
+        const userName = 'Guest'; // Replace with wallet metadata if available
+        document.getElementById('welcomeMessage').textContent = 
+          `Welcome ${userName}, do you have any $VISTA coin or do you need to buy!`;
+        document.getElementById('welcomeMessage').style.display = 'block';
+        // Close popup
+        document.getElementById('walletPopup').style.display = 'none';
       } catch (error) {
         console.error('Wallet connection failed:', error);
         alert('Failed to connect wallet. Please try again.');
+        closePopup();
       }
     }
   </script>
